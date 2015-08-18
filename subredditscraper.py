@@ -2,7 +2,7 @@
 
 __author__ = 'scottkuma'
 
-import praw
+import praw			# pip install praw
 import argparse
 from time import sleep
 import urllib
@@ -10,7 +10,7 @@ import socket
 import os
 import os.path
 import sys
-import imgurpython
+import imgurpython    		# pip install imgurpython
 from imgurpython.helpers.error import ImgurClientError
 
 parser = argparse.ArgumentParser(description='Scrape images from a Subreddit',
