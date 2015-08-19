@@ -59,7 +59,7 @@ parser.add_argument('--type', '-p',
 time_periods = ['hour', 'day', 'week', 'month', 'year', 'all']
 
 parser.add_argument('--period',
-                    help='Limit the time period for submissions. Only affects "new" and "controversial" requests.',
+                    help='Limit the time period for submissions. Only affects "top" and "controversial" requests.',
                     choices=time_periods,
                     default="all")
 
