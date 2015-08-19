@@ -151,15 +151,18 @@ while args.iterate or iterate_once:
             print sub.score, "::", sub.title
             url = sub.url
             print url
+
+            # some sources provide more than one URL to parse...
+            # We'll store these in a list, which also gives us the
+            # ability to skip over sites that we can't parse yet.
             urllist = []
 
-
-            # some trailing slashes can cause problems for our little client.
+            # Some trailing slashes can cause problems for our little client.
             # we must remove them.
             if url[-1] == '/':
                 url = url[:-1]
 
-            #Detect Special Cases
+            # Detect Special Cases
             if "imgur" in url and url.split('/')[-2] == 'a':
                 print "Downloading from imgur album..."
                 albumid = url.split('/')[-1].split('?')[0].split('#')[0]
@@ -177,21 +180,20 @@ while args.iterate or iterate_once:
             elif "imgur" in url and url.split('.')[-1].split('?')[0].split('#')[0] not in filetypes:
                 imageid = url.split('/')[-1].split('?')[0].split('#')[0]
                 try:
-                    type = ic.get_image(imageid).type
+                    filetype = ic.get_image(imageid).type
                 except ImgurClientError as e:
                     print "Error Message:", e.error_message
                     print "Error code:", e.status_code
                     print "Continuing...."
                 imgur_api_call_count += 1
-                if type == 'image/jpeg':
-                    url = url + '.jpg'
-                elif type == 'image/gif':
-                    url = url + '.gif'
-                elif type == 'image/png':
-                    url = url + '.png'
+                if filetype == 'image/jpeg':
+                    url += '.jpg'
+                elif filetype == 'image/gif':
+                    url += '.gif'
+                elif filetype == 'image/png':
+                    url += '.png'
                 print "-->", url
                 urllist.append(url)
-
 
             # download giphy GIFs (need to work on this - may not every work!)
             elif "giphy" in url:
@@ -205,20 +207,18 @@ while args.iterate or iterate_once:
                     url = url[:-1]
 
                 # need to get the "gfyGifUrl" for the resource!
-
                 fh = urllib.urlopen(url)
                 for line in fh.readlines():
                     if "gfyGifUrl" in line:
                         gfyURL = line.split('"')[1]
-
-                urllist.append(gfyURL)
+                        urllist.append(gfyURL)
 
             # download flickr pictures (Does not currently work, skips these photos)
             elif "flickr" in url:
                 print "+" * 30, "FLICKR found.... (skipping)"
 
-
             else:
+                # Not one of our special sites, so just append the URL to the list for download
                 urllist.append(url)
 
             fileinURL = 0
@@ -227,7 +227,6 @@ while args.iterate or iterate_once:
                 filename = str(url).split('/')[-1]
 
                 if len(urllist) > 1:
-                    fileinURL += 1
                     fullfilename = filedesc + " - {0:03d} - ".format(fileinURL) + filename
                 else:
                     fullfilename = filedesc + " - " + filename
@@ -239,6 +238,7 @@ while args.iterate or iterate_once:
                 else:
                     try:
                         status = urllib.urlretrieve(url, save_dir + fullfilename)
+                        fileinURL += 1
 
                     except IOError:
                         print "Unable to retrieve this URL!"
