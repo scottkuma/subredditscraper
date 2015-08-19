@@ -193,10 +193,11 @@ while args.iterate or iterate_once:
                 urllist.append(url)
 
 
-            # download gfycat GIFs
+            # download giphy GIFs (need to work on this - may not every work!)
             elif "giphy" in url:
-                print "+++++++++++++++++++++++++++++++++++++++++ GIPHY FOUND! (skipping)"
+                print "+" * 30, "GIPHY found.... (skipping)"
 
+            # download gfycat GIFs
             elif "gfycat" in url:
                 # some trailing anchors can cause problems for our little client.
                 # we must remove them.
@@ -211,6 +212,10 @@ while args.iterate or iterate_once:
                         gfyURL = line.split('"')[1]
 
                 urllist.append(gfyURL)
+
+            # download flickr pictures (Does not currently work, skips these photos)
+            elif "flickr" in url:
+                print "+" * 30, "FLICKR found.... (skipping)"
 
 
             else:
