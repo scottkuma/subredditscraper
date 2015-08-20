@@ -16,6 +16,7 @@ from imgurpython.helpers.error import ImgurClientError
 import requests
 
 
+
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     parser = argparse.ArgumentParser(description='Scrape images from a Subreddit',
@@ -70,17 +71,6 @@ with warnings.catch_warnings():
 
     args = parser.parse_args()
 
-    # set socket timeout
-    socket.setdefaulttimeout(args.timeout)
-
-    # Create connection to reddit...
-    r = praw.Reddit('ab_reddit_parser')
-
-    # Create API connection to IMGUR...
-    IMGUR_CLIENT_ID = '601caf77c951324'
-    IMGUR_CLIENT_SECRET = '1992f212ad57071e09ad2c2fd44db67084a1f148'
-    ic = imgurpython.ImgurClient(IMGUR_CLIENT_ID, IMGUR_CLIENT_SECRET)
-
     # Create necessary variables for script
 
     save_dir = args.basedir + "/" + args.subreddit + "/"
@@ -90,173 +80,192 @@ with warnings.catch_warnings():
     imgur_api_call_count = 0    # tracking variable for # of calls to imgur API
     KEEP_CHARACTERS = (' ', '.', '_')   # characters (other than alphanumeric) to keep in filenames
     filetypes = ['jpg', 'jpeg', 'png', 'gif', 'gifv', 'webm']  # file types to download
+    saved = 0
 
+
+    # set socket timeout
+    socket.setdefaulttimeout(args.timeout)
 
     try:
-        subreddit = r.get_subreddit(args.subreddit, fetch=True)   # get_top_from_all
+        # Create connection to reddit...
+        r = praw.Reddit('ab_reddit_parser')
 
-    except praw.errors.NotFound:
-        print "Subreddit '{}' does not exist.".format(args.subreddit)
-        sys.exit(0)
+        # Create API connection to IMGUR...
+        IMGUR_CLIENT_ID = '601caf77c951324'
+        IMGUR_CLIENT_SECRET = '1992f212ad57071e09ad2c2fd44db67084a1f148'
+        ic = imgurpython.ImgurClient(IMGUR_CLIENT_ID, IMGUR_CLIENT_SECRET)
 
-    d = os.path.dirname(save_dir)
-    if not os.path.exists(d):
-        os.makedirs(d)
+        try:
+            subreddit = r.get_subreddit(args.subreddit, fetch=True)   # get_top_from_all
 
-    iterate_once = True
+        except praw.errors.NotFound:
+            print "Subreddit '{}' does not exist.".format(args.subreddit)
+            sys.exit(0)
 
-    while args.iterate or iterate_once:
+        d = os.path.dirname(save_dir)
+        if not os.path.exists(d):
+            os.makedirs(d)
 
-        iterate_once = False
+        iterate_once = True
 
-        if args.type == 'top':
-            print "*** Fetching TOP submissions over past {}...".format(args.period)
-            if args.period == "year":
-                submissions = subreddit.get_top_from_year(limit=args.limit)
-            elif args.period == "month":
-                submissions = subreddit.get_top_from_month(limit=args.limit)
-            elif args.period == "week":
-                submissions = subreddit.get_top_from_week(limit=args.limit)
-            elif args.period == "day":
-                submissions = subreddit.get_top_from_day(limit=args.limit)
-            elif args.period == "hour":
-                submissions = subreddit.get_top_from_hour(limit=args.limit)
+        while args.iterate or iterate_once:
+
+            iterate_once = False
+
+            if args.type == 'top':
+                print "*** Fetching TOP submissions over past {}...".format(args.period)
+                if args.period == "year":
+                    submissions = subreddit.get_top_from_year(limit=args.limit)
+                elif args.period == "month":
+                    submissions = subreddit.get_top_from_month(limit=args.limit)
+                elif args.period == "week":
+                    submissions = subreddit.get_top_from_week(limit=args.limit)
+                elif args.period == "day":
+                    submissions = subreddit.get_top_from_day(limit=args.limit)
+                elif args.period == "hour":
+                    submissions = subreddit.get_top_from_hour(limit=args.limit)
+                else:
+                    submissions = subreddit.get_top_from_all(limit=args.limit)
+            elif args.type == 'controversial':
+                print "*** Fetching CONTROVERSIAL submissions over past {}...".format(args.period)
+                if args.period == "year":
+                    submissions = subreddit.get_controversial_from_year(limit=args.limit)
+                elif args.period == "month":
+                    submissions = subreddit.get_controversial_from_month(limit=args.limit)
+                elif args.period == "week":
+                    submissions = subreddit.get_controversial_from_week(limit=args.limit)
+                elif args.period == "day":
+                    submissions = subreddit.get_controversial_from_day(limit=args.limit)
+                elif args.period == "hour":
+                    submissions = subreddit.get_controversial_from_hour(limit=args.limit)
+                else:
+                    submissions = subreddit.get_controversial_from_all(limit=args.limit)
+            elif args.type == 'hot':
+                print "*** Fetching HOT submissions..."
+                submissions = subreddit.get_hot(limit=args.limit)
+            elif args.type == 'rising':
+                print "*** Fetching RISING submissions..."
+                submissions = subreddit.get_rising(limit=args.limit)
             else:
-                submissions = subreddit.get_top_from_all(limit=args.limit)
-        elif args.type == 'controversial':
-            print "*** Fetching CONTROVERSIAL submissions over past {}...".format(args.period)
-            if args.period == "year":
-                submissions = subreddit.get_controversial_from_year(limit=args.limit)
-            elif args.period == "month":
-                submissions = subreddit.get_controversial_from_month(limit=args.limit)
-            elif args.period == "week":
-                submissions = subreddit.get_controversial_from_week(limit=args.limit)
-            elif args.period == "day":
-                submissions = subreddit.get_controversial_from_day(limit=args.limit)
-            elif args.period == "hour":
-                submissions = subreddit.get_controversial_from_hour(limit=args.limit)
-            else:
-                submissions = subreddit.get_controversial_from_all(limit=args.limit)
-        elif args.type == 'hot':
-            print "*** Fetching HOT submissions..."
-            submissions = subreddit.get_hot(limit=args.limit)
-        elif args.type == 'rising':
-            print "*** Fetching RISING submissions..."
-            submissions = subreddit.get_rising(limit=args.limit)
-        else:
-            print "*** Fetching NEW submissions..."
-            submissions = subreddit.get_new(limit=args.limit)
+                print "*** Fetching NEW submissions..."
+                submissions = subreddit.get_new(limit=args.limit)
 
-        for sub in submissions:
-            parsed += 1
+            for sub in submissions:
+                parsed += 1
 
-            if sub.score >= args.threshold and sub.id not in already_done:
-                print "\n\n"
-                print "-=" * 20 + "-"
-                print sub.score, "::", sub.title
-                url = sub.url
-                print url
+                if sub.score >= args.threshold and sub.id not in already_done:
+                    print "\n\n"
+                    print "-=" * 20 + "-"
+                    print sub.score, "::", sub.title
+                    url = sub.url
+                    print url
 
-                # some sources provide more than one URL to parse...
-                # We'll store these in a list, which also gives us the
-                # ability to skip over sites that we can't parse yet.
-                urllist = []
+                    # some sources provide more than one URL to parse...
+                    # We'll store these in a list, which also gives us the
+                    # ability to skip over sites that we can't parse yet.
+                    urllist = []
 
-                # Some trailing slashes can cause problems for our little client.
-                # we must remove them.
-                if url[-1] == '/':
-                    url = url[:-1]
-
-                # Detect Special Cases
-                if "imgur" in url and url.split('/')[-2] == 'a':
-                    print "Downloading from imgur album..."
-                    albumid = url.split('/')[-1].split('?')[0].split('#')[0]
-                    try:
-                        for img in ic.get_album_images(albumid):
-                            urllist.append(img.link)
-                    except ImgurClientError as e:
-                        print "Error Message:", e.error_message
-                        print "Error code:", e.status_code
-                        print "Continuing...."
-                    imgur_api_call_count += 1
-                    print len(urllist), "images found"
-                # need to remove anything after the image id, so...
-                # removing anything that follows a ? or #
-                elif "imgur" in url and url.split('.')[-1].split('?')[0].split('#')[0] not in filetypes:
-                    imageid = url.split('/')[-1].split('?')[0].split('#')[0]
-                    try:
-                        filetype = ic.get_image(imageid).type
-                    except ImgurClientError as e:
-                        print "Error Message:", e.error_message
-                        print "Error code:", e.status_code
-                        print "Continuing...."
-                    imgur_api_call_count += 1
-                    if filetype == 'image/jpeg':
-                        url += '.jpg'
-                    elif filetype == 'image/gif':
-                        url += '.gif'
-                    elif filetype == 'image/png':
-                        url += '.png'
-                    print "-->", url
-                    urllist.append(url)
-
-                # download giphy GIFs (need to work on this - may not every work!)
-                elif "giphy" in url:
-                    print "+" * 30, "GIPHY found.... (skipping)"
-
-                # download gfycat GIFs
-                elif "gfycat" in url:
-                    # some trailing anchors can cause problems for our little client.
+                    # Some trailing slashes can cause problems for our little client.
                     # we must remove them.
-                    if url[-1] == '#':
+                    if url[-1] == '/':
                         url = url[:-1]
 
-                    # need to get the "gfyGifUrl" for the resource!
-                    fh = requests.get(url)
-                    for line in fh.iter_lines():
-                        if "gfyGifUrl" in line:
-                            gfyURL = line.split('"')[1]
-                            urllist.append(gfyURL)
-
-                # download flickr pictures (Does not currently work, skips these photos)
-                elif "flickr" in url:
-                    print "+" * 30, "FLICKR found.... (skipping)"
-
-                else:
-                    # Not one of our special sites, so just append the URL to the list for download
-                    urllist.append(url)
-
-                fileinURL = 0
-                for url in urllist:
-                    fileinURL += 1  # increment this counter
-                    filedesc = "".join(c for c in sub.title if c.isalnum() or c in KEEP_CHARACTERS).rstrip()
-                    filename = str(url).split('/')[-1]
-
-                    if len(urllist) > 1:
-                        fullfilename = filedesc + " - {0:03d} - ".format(fileinURL) + filename
-                    else:
-                        fullfilename = filedesc + " - " + filename
-
-                    print "...", fullfilename
-
-                    if os.path.isfile(save_dir + fullfilename):
-                        print "** Skipping \"" + fullfilename + "\" - file already exists..."
-                    else:
+                    # Detect Special Cases
+                    if "imgur" in url and url.split('/')[-2] == 'a':
+                        print "Downloading from imgur album..."
+                        albumid = url.split('/')[-1].split('?')[0].split('#')[0]
                         try:
-                            #status = urllib3.request.urlretrieve(url, save_dir + fullfilename)
-                            response = requests.get(url, stream=True)
-                            with open(save_dir+fullfilename, 'wb') as out_file:
-                                shutil.copyfileobj(response.raw, out_file)
-                            del response    #Remove object from memory
+                            for img in ic.get_album_images(albumid):
+                                urllist.append(img.link)
+                        except ImgurClientError as e:
+                            print "Error Message:", e.error_message
+                            print "Error code:", e.status_code
+                            print "Continuing...."
+                        imgur_api_call_count += 1
+                        print len(urllist), "images found"
+                    # need to remove anything after the image id, so...
+                    # removing anything that follows a ? or #
+                    elif "imgur" in url and url.split('.')[-1].split('?')[0].split('#')[0] not in filetypes:
+                        imageid = url.split('/')[-1].split('?')[0].split('#')[0]
+                        try:
+                            filetype = ic.get_image(imageid).type
+                        except ImgurClientError as e:
+                            print "Error Message:", e.error_message
+                            print "Error code:", e.status_code
+                            print "Continuing...."
+                        imgur_api_call_count += 1
+                        if filetype == 'image/jpeg':
+                            url += '.jpg'
+                        elif filetype == 'image/gif':
+                            url += '.gif'
+                        elif filetype == 'image/png':
+                            url += '.png'
+                        print "-->", url
+                        urllist.append(url)
 
-                        except IOError:
-                            print "Unable to retrieve this URL!"
-                            pass
+                    # download giphy GIFs (need to work on this - may not every work!)
+                    elif "giphy" in url:
+                        print "+" * 30, "GIPHY found.... (skipping)"
 
-                    already_done.append(sub.id)
+                    # download gfycat GIFs
+                    elif "gfycat" in url:
+                        # some trailing anchors can cause problems for our little client.
+                        # we must remove them.
+                        if url[-1] == '#':
+                            url = url[:-1]
 
-        print parsed
+                        # need to get the "gfyGifUrl" for the resource!
+                        fh = requests.get(url)
+                        for line in fh.iter_lines():
+                            if "gfyGifUrl" in line:
+                                gfyURL = line.split('"')[1]
+                                urllist.append(gfyURL)
+
+                    # download flickr pictures (Does not currently work, skips these photos)
+                    elif "flickr" in url:
+                        print "+" * 30, "FLICKR found.... (skipping)"
+
+                    else:
+                        # Not one of our special sites, so just append the URL to the list for download
+                        urllist.append(url)
+
+                    fileinURL = 0
+                    for url in urllist:
+                        fileinURL += 1  # increment this counter
+                        filedesc = "".join(c for c in sub.title if c.isalnum() or c in KEEP_CHARACTERS).rstrip()
+                        filename = str(url).split('/')[-1]
+
+                        if len(urllist) > 1:
+                            fullfilename = filedesc + " - {0:03d} - ".format(fileinURL) + filename
+                        else:
+                            fullfilename = filedesc + " - " + filename
+
+                        print "...", fullfilename
+
+                        if os.path.isfile(save_dir + fullfilename):
+                            print "** Skipping \"" + fullfilename + "\" - file already exists..."
+                        else:
+                            try:
+                                #status = urllib3.request.urlretrieve(url, save_dir + fullfilename)
+                                response = requests.get(url, stream=True)
+                                with open(save_dir+fullfilename, 'wb') as out_file:
+                                    shutil.copyfileobj(response.raw, out_file)
+                                del response    #Remove object from memory
+                                saved += 1
+
+                            except IOError:
+                                print "Unable to retrieve this URL!"
+                                pass
+
+                        already_done.append(sub.id)
+    except KeyboardInterrupt:
+        print "\n\nCaught Keyboard Interrupt...ending gracefully."
+    finally:
+        print "\n\n Final Statistics:"
+        print "-----------------"
+        print parsed, "URLs parsed"
+        print parsed - len(already_done), "URLs skipped"
         print imgur_api_call_count, "calls made to IMGUR API."
-        print len(already_done), "images saved to directory."
+        print saved, "images saved to directory."
         if args.iterate:
             sleep(args.sleep)
