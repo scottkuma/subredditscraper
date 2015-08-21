@@ -154,11 +154,10 @@ with warnings.catch_warnings():
                 parsed += 1
 
                 if sub.score >= args.threshold and sub.id not in already_done:
-                    print "\n\n"
-                    print "-=" * 20 + "-"
+                    print "\n"
+                    print "-=" * 30 + "-"
                     print sub.score, "::", sub.title
                     url = sub.url
-                    print url
 
                     # some sources provide more than one URL to parse...
                     # We'll store these in a list, which also gives us the
@@ -205,7 +204,7 @@ with warnings.catch_warnings():
 
                     # download giphy GIFs (need to work on this - may not every work!)
                     elif "giphy" in url:
-                        print "+" * 30, "GIPHY found.... (skipping)"
+                        print "+" * 30, "GIPHY not implemented yet.... (skipping)"
 
                     # download gfycat GIFs
                     elif "gfycat" in url:
@@ -240,18 +239,30 @@ with warnings.catch_warnings():
                         else:
                             fullfilename = filedesc + " - " + filename
 
-                        print "...", fullfilename
+                        file_path = save_dir + fullfilename
 
-                        if os.path.isfile(save_dir + fullfilename):
+                        if os.path.isfile(file_path):
                             print "** Skipping \"" + fullfilename + "\" - file already exists..."
                         else:
                             try:
-                                #status = urllib3.request.urlretrieve(url, save_dir + fullfilename)
                                 response = requests.get(url, stream=True)
-                                with open(save_dir+fullfilename, 'wb') as out_file:
-                                    shutil.copyfileobj(response.raw, out_file)
-                                del response    #Remove object from memory
-                                saved += 1
+                                total_length = response.headers.get('content-length')
+                                if total_length is not None and response.headers['content-type'].split('/')[0] == 'image':
+                                    print "Saving to: \"{}\"".format(file_path)
+                                    with open(file_path, 'wb') as out_file:
+                                        dl = 0
+                                        total_length = int(total_length)
+                                        for data in response.iter_content(chunk_size=1024):
+                                            dl += len(data)
+                                            out_file.write(data)
+                                            done = int(50 * dl / total_length)
+                                            sys.stdout.write("\r[%s>%s] %d / %d" % ('=' * (done - 1), ' ' * (50 - done), dl, total_length) )
+                                            sys.stdout.flush()
+                                        print " "
+                                    del response    #Remove object from memory
+                                    saved += 1
+                                else:
+                                    print "Skipped - either not an image or 0 length..."
 
                             except IOError:
                                 print "Unable to retrieve this URL!"
@@ -264,7 +275,7 @@ with warnings.catch_warnings():
         print "\n\n Final Statistics:"
         print "-----------------"
         print parsed, "URLs parsed"
-        print parsed - len(already_done), "URLs skipped"
+        #print parsed - len(already_done), "URLs skipped"
         print imgur_api_call_count, "calls made to IMGUR API."
         print saved, "images saved to directory."
         if args.iterate:
