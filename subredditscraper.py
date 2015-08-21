@@ -159,7 +159,7 @@ with warnings.catch_warnings():
                     print sub.score, "::", sub.title
                     url = sub.url
 
-                    # some sources provide more than one URL to parse...
+                    # Some sources provide more than one URL to parse...
                     # We'll store these in a list, which also gives us the
                     # ability to skip over sites that we can't parse yet.
                     urllist = []
@@ -248,7 +248,7 @@ with warnings.catch_warnings():
                                 response = requests.get(url, stream=True)
                                 total_length = response.headers.get('content-length')
                                 if total_length is not None and response.headers['content-type'].split('/')[0] == 'image':
-                                    print "Saving to: \"{}\"".format(file_path)
+                                    print "Saving to: \"{}\"".format(file_path.encode('utf-8'))
                                     with open(file_path, 'wb') as out_file:
                                         dl = 0
                                         total_length = int(total_length)
@@ -266,7 +266,7 @@ with warnings.catch_warnings():
                                 else:
                                     print "Skipped - either not an image or 0 length..."
 
-                            except IOError:
+                            except (IOError, UnicodeEncodeError):
                                 print "Unable to retrieve this URL!"
                                 pass
 
