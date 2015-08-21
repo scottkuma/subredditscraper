@@ -253,13 +253,15 @@ with warnings.catch_warnings():
                                         dl = 0
                                         total_length = int(total_length)
                                         for data in response.iter_content(chunk_size=1024):
-                                            dl += len(data)
                                             out_file.write(data)
+                                            # Calculate & write progress bar to standard output.
+                                            dl += len(data)
                                             done = int(50 * dl / total_length)
                                             sys.stdout.write("\r[%s>%s] %d / %d" % ('=' * (done - 1), ' ' * (50 - done), dl, total_length) )
                                             sys.stdout.flush()
                                         print " "
-                                    del response    #Remove object from memory
+                                    # remove response object from memory to prevent leak.
+                                    del response
                                     saved += 1
                                 else:
                                     print "Skipped - either not an image or 0 length..."
