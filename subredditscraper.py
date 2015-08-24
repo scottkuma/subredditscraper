@@ -2,7 +2,7 @@
 
 __author__ = 'scottkuma'
 
-import praw			# pip install praw
+import praw			        # pip install praw
 import argparse
 from time import sleep
 import socket
@@ -14,6 +14,9 @@ import sys
 import imgurpython    		# pip install imgurpython
 from imgurpython.helpers.error import ImgurClientError
 import requests
+import humanfriendly        # pip install humanfriendly
+
+# TODO: make a requirements.txt file to auto-install requirements
 
 
 
@@ -68,6 +71,8 @@ with warnings.catch_warnings():
                         help='Limit the time period for submissions. Only affects "top" and "controversial" requests.',
                         choices=time_periods,
                         default="all")
+
+    # TODO: Add human-parseable filesize limits.
 
     args = parser.parse_args()
 
@@ -202,7 +207,7 @@ with warnings.catch_warnings():
                         print "-->", url
                         urllist.append(url)
 
-                    # download giphy GIFs (need to work on this - may not every work!)
+                    # TODO: download giphy GIFs (need to work on this - may not every work!)
                     elif "giphy" in url:
                         print "+" * 30, "GIPHY not implemented yet.... (skipping)"
 
@@ -247,6 +252,7 @@ with warnings.catch_warnings():
                             try:
                                 response = requests.get(url, stream=True)
                                 total_length = response.headers.get('content-length')
+                                # TODO: Implement length check
                                 if total_length is not None and response.headers['content-type'].split('/')[0] == 'image':
                                     print "Saving to: \"{}\"".format(file_path.encode('utf-8'))
                                     with open(file_path, 'wb') as out_file:
