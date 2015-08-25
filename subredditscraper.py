@@ -90,6 +90,7 @@ with warnings.catch_warnings():
     filetypes = ['jpg', 'jpeg', 'png', 'webm', 'gif', 'gifv']  # file types to download
     saved = 0
     MAX_SIZE = humanfriendly.parse_size(args.maxsize)
+    sleeptime = int(args.sleep)
 
     # set socket timeout
     socket.setdefaulttimeout(args.timeout)
@@ -196,19 +197,19 @@ with warnings.catch_warnings():
                         imageid = url.split('/')[-1].split('?')[0].split('#')[0]
                         try:
                             filetype = ic.get_image(imageid).type
+                            imgur_api_call_count += 1
+                            if filetype == 'image/jpeg':
+                                url += '.jpg'
+                            elif filetype == 'image/gif':
+                                url += '.gif'
+                            elif filetype == 'image/png':
+                                url += '.png'
+                            print "-->", url
+                            urllist.append(url)
                         except ImgurClientError as e:
                             print "Error Message:", e.error_message
                             print "Error code:", e.status_code
                             print "Continuing...."
-                        imgur_api_call_count += 1
-                        if filetype == 'image/jpeg':
-                            url += '.jpg'
-                        elif filetype == 'image/gif':
-                            url += '.gif'
-                        elif filetype == 'image/png':
-                            url += '.png'
-                        print "-->", url
-                        urllist.append(url)
 
                     # TODO: download giphy GIFs (need to work on this - may not every work!)
                     elif "giphy" in url:
@@ -286,6 +287,17 @@ with warnings.catch_warnings():
                                 pass
 
                         already_done.append(sub.id)
+            if args.iterate:
+                print "\n\n Statistics:"
+                print "-----------"
+                print parsed, "URLs parsed"
+                #print parsed - len(already_done), "URLs skipped"
+                print imgur_api_call_count, "calls made to IMGUR API."
+                print saved, "images saved to directory."
+                if args.iterate:
+                    print "\n\nSubreddit iteration complete. Sleeping for {} seconds. **YAWN**".format(sleeptime)
+                    sleep(args.sleep)
+
     except KeyboardInterrupt:
         print "\n\nCaught Keyboard Interrupt...ending gracefully."
     finally:
@@ -295,5 +307,3 @@ with warnings.catch_warnings():
         #print parsed - len(already_done), "URLs skipped"
         print imgur_api_call_count, "calls made to IMGUR API."
         print saved, "images saved to directory."
-        if args.iterate:
-            sleep(args.sleep)
