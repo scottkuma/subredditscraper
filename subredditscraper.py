@@ -72,7 +72,10 @@ with warnings.catch_warnings():
                         choices=time_periods,
                         default="all")
 
-    # TODO: Add human-parseable filesize limits.
+    # human-parseable filesize limits.
+    parser.add_argument('--maxsize', '-m',
+                        help='Do not download files that are greater than this size in bytes.',
+                        default="30M")
 
     args = parser.parse_args()
 
@@ -84,9 +87,9 @@ with warnings.catch_warnings():
     parsed = 0     # number of URLs parsed
     imgur_api_call_count = 0    # tracking variable for # of calls to imgur API
     KEEP_CHARACTERS = (' ', '.', '_')   # characters (other than alphanumeric) to keep in filenames
-    filetypes = ['jpg', 'jpeg', 'png', 'gif', 'gifv', 'webm']  # file types to download
+    filetypes = ['jpg', 'jpeg', 'png', 'webm', 'gif', 'gifv']  # file types to download
     saved = 0
-
+    MAX_SIZE = humanfriendly.parse_size(args.maxsize)
 
     # set socket timeout
     socket.setdefaulttimeout(args.timeout)
@@ -251,9 +254,13 @@ with warnings.catch_warnings():
                         else:
                             try:
                                 response = requests.get(url, stream=True)
-                                total_length = response.headers.get('content-length')
-                                # TODO: Implement length check
-                                if total_length is not None and response.headers['content-type'].split('/')[0] == 'image':
+
+                                if response.headers.get('content-length') is None:
+                                    total_length = 0
+                                else:
+                                    total_length = int(response.headers.get('content-length'))
+
+                                if total_length > 0 and total_length < MAX_SIZE and response.headers['content-type'].split('/')[0] == 'image':
                                     print "Saving to: \"{}\"".format(file_path.encode('utf-8'))
                                     with open(file_path, 'wb') as out_file:
                                         dl = 0
@@ -263,14 +270,16 @@ with warnings.catch_warnings():
                                             # Calculate & write progress bar to standard output.
                                             dl += len(data)
                                             done = int(50 * dl / total_length)
-                                            sys.stdout.write("\r[%s>%s] %d / %d" % ('=' * (done - 1), ' ' * (50 - done), dl, total_length) )
+                                            sys.stdout.write("\r[%s>%s] %s / %s     " % ('=' * (done - 1), ' ' * (50 - done), humanfriendly.format_size(dl,True), humanfriendly.format_size(total_length, True) ))
                                             sys.stdout.flush()
                                         print " "
                                     # remove response object from memory to prevent leak.
                                     del response
                                     saved += 1
+                                elif total_length >= MAX_SIZE:
+                                    print "Skipped - File length {} is greater than maximum size of {} bytes...".format(total_length, MAX_SIZE)
                                 else:
-                                    print "Skipped - either not an image or 0 length..."
+                                    print "Skipped - File is either not an image or 0 length..."
 
                             except (IOError, UnicodeEncodeError):
                                 print "Unable to retrieve this URL!"
